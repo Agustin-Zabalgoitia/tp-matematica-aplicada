@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>Drive API Quickstart</title>
+    <link rel="icon" type="image/x-icon" href="/imagenes/favicon.ico" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -17,7 +18,7 @@
     />
   </head>
   <body class="d-flex h-100 text-center text-bg-dark">
-    <!--Estilo sacado de: https://getbootstrap.com/docs/5.3/examples/cover/#-->
+    <!--Estilo base sacado de: https://getbootstrap.com/docs/5.3/examples/cover/#-->
     <div class="cover-container d-flex w-100 h-100 p-5 mx-auto flex-column">
       <main class="px-3">
         <h1 class="display-2 p-3">Oauth</h1>
@@ -59,6 +60,8 @@
           </button>
         </p>
         <div class="row justify-content-center">
+          <img id="profile-pic" />
+          <p id="profile"></p>
           <p class="lead" id="content"></p>
         </div>
       </main>
@@ -73,18 +76,25 @@
       // TODO(developer): Set to client ID and API key from the Developer Console
       const CLIENT_ID =
         "213549188936-gnh00tekb4s6e8p73ait6ekmldpcugt6.apps.googleusercontent.com";
-      const API_KEY = "AIzaSyAJaka6--L-JnOEATyPVlSMrWcLPic_wkk";
+      // TODO: encontrar una forma de que esto no esté expuesto
+      const API_KEY_DRIVE = "AIzaSyAJaka6--L-JnOEATyPVlSMrWcLPic_wkk";
+      const API_KEY_PEOPLE = "AIzaSyCaVSLe7f1JB3Z-LU3xen4HtQkeezpHnOg";
 
       // Discovery doc URL for APIs used by the quickstart
-      const DISCOVERY_DOC =
+      const DISCOVERY_DOC_DRIVE =
         "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
+
+      const DISCOVERY_DOC_PEOPLE =
+        "https://www.googleapis.com/discovery/v1/apis/people/v1/rest";
 
       // Authorization scopes required by the API; multiple scopes can be
       // included, separated by spaces.
-      const SCOPES = "https://www.googleapis.com/auth/drive.metadata.readonly";
+      const SCOPES =
+        "https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email";
 
       let tokenClient;
-      let gapiInited = false;
+      let gapiDriveInited = false;
+      let gapiPeopleInited = false;
       let gisInited = false;
 
       document.getElementById("authorize_button").style.visibility = "hidden";
@@ -95,19 +105,31 @@
        * Callback after api.js is loaded.
        */
       function gapiLoaded() {
-        gapi.load("client", initializeGapiClient);
+        gapi.load("client", initializeGapiDriveClient);
+        gapi.load("client", initializeGapiPeopleClient);
       }
 
       /**
        * Callback after the API client is loaded. Loads the
        * discovery doc to initialize the API.
        */
-      async function initializeGapiClient() {
+      //Esta función es para cargar el cliente que va a tratar con la API de Drive
+      async function initializeGapiDriveClient() {
         await gapi.client.init({
-          apiKey: API_KEY,
-          discoveryDocs: [DISCOVERY_DOC],
+          apiKey: API_KEY_DRIVE,
+          discoveryDocs: [DISCOVERY_DOC_DRIVE],
         });
-        gapiInited = true;
+        gapiDriveInited = true;
+        maybeEnableButtons();
+      }
+
+      //Esta función es para cargar el cliente que va a tratar con la API de People
+      async function initializeGapiPeopleClient() {
+        await gapi.client.init({
+          apiKey: API_KEY_PEOPLE,
+          discoveryDocs: [DISCOVERY_DOC_PEOPLE],
+        });
+        gapiPeopleInited = true;
         maybeEnableButtons();
       }
 
@@ -128,7 +150,7 @@
        * Enables user interaction after all libraries are loaded.
        */
       function maybeEnableButtons() {
-        if (gapiInited && gisInited) {
+        if (gapiDriveInited && gapiPeopleInited && gisInited) {
           document.getElementById("authorize_button").style.visibility =
             "visible";
         }
@@ -148,6 +170,7 @@
             .classList.remove("disabled");
           document.getElementById("authorize_button").innerText = "Refrescar";
           await listFiles();
+          await getUserProfile();
         };
 
         if (gapi.client.getToken() === null) {
@@ -169,21 +192,22 @@
           google.accounts.oauth2.revoke(token.access_token);
           gapi.client.setToken("");
           document.getElementById("content").innerText = "";
+          document.getElementById("profile").innerText = "";
+          document.getElementById("profile-pic").src = "";
           document.getElementById("authorize_button").innerText = "Autorizar";
-          //document.getElementById("signout_button").style.visibility = "hidden";
           document.getElementById("signout_button").classList.add("disabled");
         }
       }
 
       /**
-       * Print metadata for first 10 files.
+       * Print metadata for first 1000 files.
        */
       async function listFiles() {
         let response;
         try {
           response = await gapi.client.drive.files.list({
-            pageSize: 10,
-            fields: "files(id, name)",
+            pageSize: 1000,
+            fields: "files(name)",
           });
         } catch (err) {
           document.getElementById("content").innerText = err.message;
@@ -201,6 +225,41 @@
         );
         document.getElementById("content").innerText = output;
       }
+
+      /**
+       * Get the profile information of the authenticated user.
+       */
+      async function getUserProfile() {
+        let response;
+        try {
+          response = await gapi.client.people.people.get({
+            resourceName: "people/me",
+            personFields: "names,emailAddresses,photos",
+          });
+        } catch (err) {
+          document.getElementById("content").innerText = err.message;
+          return;
+        }
+        const profile = response.result;
+        console.log(profile);
+        const name = profile.names
+          ? profile.names[0].displayName
+          : "No name found";
+        console.log(name);
+
+        const email = profile.emailAddresses
+          ? profile.emailAddresses[0].value
+          : "No email found";
+        console.log(email);
+
+        const photo = profile.photos ? profile.photos[0].url : "No photo found";
+        console.log(photo);
+
+        document.getElementById(
+          "profile"
+        ).innerText = `Name: ${name}\nEmail: ${email}`;
+        document.getElementById("profile-pic").src = `${photo}`;
+      }
     </script>
     <script
       async
@@ -214,6 +273,7 @@
       src="https://accounts.google.com/gsi/client"
       onload="gisLoaded()"
     ></script>
+
     <!--Bootstrap-->
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
