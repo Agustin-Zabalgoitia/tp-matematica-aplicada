@@ -3,15 +3,66 @@
   <head>
     <title>Drive API Quickstart</title>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!--Estilos propios-->
+    <link rel="stylesheet" href="css/principal.css" />
+
+    <!--Bootstrap-->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
   </head>
-  <body>
-    <p>Drive API Quickstart</p>
-
-    <!--Add buttons to initiate auth sequence and sign out-->
-    <button id="authorize_button" onclick="handleAuthClick()">Authorize</button>
-    <button id="signout_button" onclick="handleSignoutClick()">Sign Out</button>
-
-    <pre id="content" style="white-space: pre-wrap;"></pre>
+  <body class="d-flex h-100 text-center text-bg-dark">
+    <!--Estilo sacado de: https://getbootstrap.com/docs/5.3/examples/cover/#-->
+    <div class="cover-container d-flex w-100 h-100 p-5 mx-auto flex-column">
+      <main class="px-3">
+        <h1 class="display-2 p-3">Oauth</h1>
+        <div class="row justify-content-center">
+          <p class="lead col-lg-7">
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam
+            rhoncus erat id ullamcorper ullamcorper. Sed finibus massa id enim
+            vehicula mollis. Orci varius natoque penatibus et magnis dis
+            parturient montes, nascetur ridiculus mus. Nam mollis nisi lorem,
+            commodo aliquet mi bibendum id. Morbi tempor ligula a enim mattis,
+            facilisis mattis metus faucibus. Aenean eget scelerisque augue.
+            Morbi vel nisl at sapien euismod dictum. Curabitur dictum nisi quis
+            ipsum ultricies convallis. Vestibulum ut euismod dui. Curabitur
+            elementum justo id turpis dictum vulputate. Duis dignissim urna ut
+            urna mollis, eget sollicitudin lorem tempus. Fusce dignissim sem eu
+            est blandit sollicitudin. Praesent enim nunc, interdum ut metus et,
+            tincidunt dapibus turpis. Nam sit amet mi id erat mattis dictum.
+            Vestibulum vitae lorem placerat, ultricies felis iaculis, bibendum
+            ante.
+          </p>
+        </div>
+        <p class="lead p-3">
+          <!--Add buttons to initiate auth sequence and sign out-->
+          <button
+            type="button"
+            class="btn btn-lg btn-light fw-bold border-white bg-white"
+            id="authorize_button"
+            onclick="handleAuthClick()"
+          >
+            Autorizar
+          </button>
+          <button
+            type="button"
+            class="btn btn-lg btn-light fw-bold border-white bg-white"
+            id="signout_button"
+            onclick="handleSignoutClick()"
+          >
+            Cerrar Sesión
+          </button>
+        </p>
+        <div class="row justify-content-center">
+          <p class="lead" id="content"></p>
+        </div>
+      </main>
+    </div>
 
     <script type="text/javascript">
       /* exported gapiLoaded */
@@ -25,24 +76,26 @@
       const API_KEY = "AIzaSyAJaka6--L-JnOEATyPVlSMrWcLPic_wkk";
 
       // Discovery doc URL for APIs used by the quickstart
-      const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+      const DISCOVERY_DOC =
+        "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
 
       // Authorization scopes required by the API; multiple scopes can be
       // included, separated by spaces.
-      const SCOPES = 'https://www.googleapis.com/auth/drive.metadata.readonly';
+      const SCOPES = "https://www.googleapis.com/auth/drive.metadata.readonly";
 
       let tokenClient;
       let gapiInited = false;
       let gisInited = false;
 
-      document.getElementById('authorize_button').style.visibility = 'hidden';
-      document.getElementById('signout_button').style.visibility = 'hidden';
+      document.getElementById("authorize_button").style.visibility = "hidden";
+      //document.getElementById("signout_button").style.visibility = "hidden";
+      document.getElementById("signout_button").classList.add("disabled");
 
       /**
        * Callback after api.js is loaded.
        */
       function gapiLoaded() {
-        gapi.load('client', initializeGapiClient);
+        gapi.load("client", initializeGapiClient);
       }
 
       /**
@@ -65,7 +118,7 @@
         tokenClient = google.accounts.oauth2.initTokenClient({
           client_id: CLIENT_ID,
           scope: SCOPES,
-          callback: '', // defined later
+          callback: "", // defined later
         });
         gisInited = true;
         maybeEnableButtons();
@@ -76,7 +129,8 @@
        */
       function maybeEnableButtons() {
         if (gapiInited && gisInited) {
-          document.getElementById('authorize_button').style.visibility = 'visible';
+          document.getElementById("authorize_button").style.visibility =
+            "visible";
         }
       }
 
@@ -86,20 +140,23 @@
       function handleAuthClick() {
         tokenClient.callback = async (resp) => {
           if (resp.error !== undefined) {
-            throw (resp);
+            throw resp;
           }
-          document.getElementById('signout_button').style.visibility = 'visible';
-          document.getElementById('authorize_button').innerText = 'Refresh';
+          //document.getElementById("signout_button").style.visibility = "visible";
+          document
+            .getElementById("signout_button")
+            .classList.remove("disabled");
+          document.getElementById("authorize_button").innerText = "Refrescar";
           await listFiles();
         };
 
         if (gapi.client.getToken() === null) {
           // Prompt the user to select a Google Account and ask for consent to share their data
           // when establishing a new session.
-          tokenClient.requestAccessToken({prompt: 'consent'});
+          tokenClient.requestAccessToken({ prompt: "consent" });
         } else {
           // Skip display of account chooser and consent dialog for an existing session.
-          tokenClient.requestAccessToken({prompt: ''});
+          tokenClient.requestAccessToken({ prompt: "" });
         }
       }
 
@@ -110,10 +167,11 @@
         const token = gapi.client.getToken();
         if (token !== null) {
           google.accounts.oauth2.revoke(token.access_token);
-          gapi.client.setToken('');
-          document.getElementById('content').innerText = '';
-          document.getElementById('authorize_button').innerText = 'Authorize';
-          document.getElementById('signout_button').style.visibility = 'hidden';
+          gapi.client.setToken("");
+          document.getElementById("content").innerText = "";
+          document.getElementById("authorize_button").innerText = "Autorizar";
+          //document.getElementById("signout_button").style.visibility = "hidden";
+          document.getElementById("signout_button").classList.add("disabled");
         }
       }
 
@@ -124,26 +182,43 @@
         let response;
         try {
           response = await gapi.client.drive.files.list({
-            'pageSize': 10,
-            'fields': 'files(id, name)',
+            pageSize: 10,
+            fields: "files(id, name)",
           });
         } catch (err) {
-          document.getElementById('content').innerText = err.message;
+          document.getElementById("content").innerText = err.message;
           return;
         }
         const files = response.result.files;
         if (!files || files.length == 0) {
-          document.getElementById('content').innerText = 'No files found.';
+          document.getElementById("content").innerText = "No files found.";
           return;
         }
         // Flatten to string to display
         const output = files.reduce(
-            (str, file) => `${str}${file.name} (${file.id})\n`,
-            'Files:\n');
-        document.getElementById('content').innerText = output;
+          (str, file) => `${str}${file.name}\n`,
+          "Archivos:\n"
+        );
+        document.getElementById("content").innerText = output;
       }
     </script>
-    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
-    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+    <script
+      async
+      defer
+      src="https://apis.google.com/js/api.js"
+      onload="gapiLoaded()"
+    ></script>
+    <script
+      async
+      defer
+      src="https://accounts.google.com/gsi/client"
+      onload="gisLoaded()"
+    ></script>
+    <!--Bootstrap-->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
   </body>
 </html>
